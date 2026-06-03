@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://riverthrimp.github.io/gzh-layout-designer/sitemap.xml

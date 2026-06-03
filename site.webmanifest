@@ -1,0 +1,9 @@
+{
+  "name": "公众号排版设计器",
+  "short_name": "公众号排版",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f9",
+  "theme_color": "#0f8b7f",
+  "description": "免费微信公众号排版、预览和 HTML 导出工具。"
+}
