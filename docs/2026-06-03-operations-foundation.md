@@ -40,7 +40,7 @@ After：网站具备基础运营入口，用户可以查看教程、模板和更
 - `npm run test:e2e`：本地真实浏览器烟测通过，覆盖首页、内容页和响应式断点。
 - `npm run build`：构建通过，内容页复制到 `dist/` 并替换为构建后的哈希 CSS。
 - `npm run test:dist`：发布产物真实浏览器烟测通过。
-- `npm run test:live`：待发布后运行。
+- `npm run test:live`：线上真实浏览器烟测通过，覆盖 GitHub Pages 首页、教程页、模板页、更新日志和源码路径 404。
 
 ## 已知风险
 
