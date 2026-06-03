@@ -9,7 +9,6 @@ import {
 } from "./utils.js";
 import {
   STORAGE_KEY,
-  MIN_AD_TEXT_LENGTH,
   STATE_VERSION,
   themes,
   templates,
@@ -46,12 +45,6 @@ const els = {
   videoCover: document.querySelector("#video-cover"),
   insertVideo: document.querySelector("#insert-video-button"),
   insertSixGrid: document.querySelector("#insert-six-grid-button"),
-  adBrand: document.querySelector("#ad-brand"),
-  adCopy: document.querySelector("#ad-copy"),
-  adLink: document.querySelector("#ad-link"),
-  adEnabled: document.querySelector("#ad-enabled"),
-  lengthCheck: document.querySelector("#length-check"),
-  enrichButton: document.querySelector("#enrich-button"),
   status: document.querySelector("#status-message"),
   toast: document.querySelector("#toast"),
 };
@@ -95,7 +88,6 @@ function bindEvents() {
   document.querySelector("#copy-html-button").addEventListener("click", copyHtmlSource);
   document.querySelector("#download-button").addEventListener("click", downloadHtml);
   document.querySelector("#clear-button").addEventListener("click", clearDraft);
-  els.enrichButton.addEventListener("click", appendVisibleEnrichment);
   els.themeSelect.addEventListener("change", () => setActiveTheme(els.themeSelect.value));
   els.applyCustomTheme.addEventListener("click", applyCustomTheme);
   els.templateSearch.addEventListener("input", renderTemplateLibrary);
@@ -143,10 +135,6 @@ function bindEvents() {
     els.date,
     els.summary,
     els.editor,
-    els.adBrand,
-    els.adCopy,
-    els.adLink,
-    els.adEnabled,
     els.customAccent,
     els.customSoft,
     els.customText,
@@ -382,19 +370,11 @@ function renderPreviewCore() {
   els.preview.innerHTML = html;
   const textLength = getVisibleArticleLength();
   els.wordCount.textContent = `${textLength} 字`;
-  renderLengthCheck(textLength);
 }
 
 function getVisibleArticleLength() {
   const text = [els.title.value, els.summary.value, els.editor.innerText].join("");
   return text.replace(/\s/g, "").length;
-}
-
-function renderLengthCheck(textLength) {
-  const ready = textLength >= MIN_AD_TEXT_LENGTH;
-  els.lengthCheck.textContent = `正文可见字数：${textLength} / ${MIN_AD_TEXT_LENGTH}`;
-  els.lengthCheck.classList.toggle("is-ready", ready);
-  els.lengthCheck.classList.toggle("is-warning", !ready && els.adEnabled.checked);
 }
 
 function buildArticleHtml() {
@@ -404,7 +384,6 @@ function buildArticleHtml() {
   const date = escapeHtml(els.date.value || new Date().toISOString().slice(0, 10));
   const summary = escapeHtml(els.summary.value.trim());
   const bodyHtml = editorToWechatHtml(theme);
-  const adHtml = els.adEnabled.checked ? buildAdHtml(theme) : "";
 
   return `
     <section style="max-width:677px;margin:0 auto;color:${theme.text};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;">
@@ -416,7 +395,6 @@ function buildArticleHtml() {
           : ""
       }
       ${bodyHtml}
-      ${adHtml}
     </section>
   `;
 }
@@ -606,30 +584,6 @@ function videoNodeToWechatHtml(node, theme) {
       <a href="${url}" style="color:${theme.accent};font-size:14px;text-decoration:none;">打开视频链接</a>
     </section>
   `;
-}
-
-function buildAdHtml(theme) {
-  const brand = escapeHtml(els.adBrand.value.trim() || "赞助推荐");
-  const copy = escapeHtml(els.adCopy.value.trim() || "这里展示 B 端广告合作内容。");
-  const link = sanitizeUrl(els.adLink.value);
-  return `
-    <section style="margin:30px 0 0;padding:16px;border-radius:6px;border:1px solid ${theme.accent};background:${theme.soft};">
-      <p style="margin:0 0 6px;font-size:12px;color:#7a858c;line-height:1.6;">赞助推荐</p>
-      <p style="margin:0 0 8px;font-size:17px;font-weight:700;line-height:1.5;color:${theme.text};">${brand}</p>
-      <p style="margin:0 0 12px;font-size:14px;line-height:1.8;color:${theme.text};">${copy}</p>
-      <a href="${link}" style="color:${theme.accent};font-size:14px;text-decoration:none;">了解合作方案</a>
-    </section>
-  `;
-}
-
-function appendVisibleEnrichment() {
-  const additions = [
-    "<h2>补充说明</h2>",
-    "<p>为了让读者更清楚地理解这套公众号排版工作流，建议在正式发布前补充使用场景、适合人群和落地步骤。这样既能提升文章完整度，也能让后续广告推荐更自然地承接正文内容。</p>",
-    "<p>实际使用时，可以先完成标题和摘要，再用六宫格展示核心能力，最后把广告卡片放在总结之后。读者读完正文后再看到商业推荐，接受度会更高，转化路径也更清晰。</p>",
-  ].join("");
-  insertEditorHtml(additions, { append: true });
-  setStatus("已追加可见补充说明");
 }
 
 function insertSixGridBlock(options = {}) {
@@ -833,7 +787,6 @@ function readFileAsDataUrl(file) {
 async function copyRichArticle() {
   const html = buildArticleHtml();
   const text = els.preview.innerText;
-  warnIfAdTextIsShort();
   try {
     if (navigator.clipboard?.write && window.ClipboardItem) {
       await navigator.clipboard.write([
@@ -854,7 +807,6 @@ async function copyRichArticle() {
 
 async function copyHtmlSource() {
   const html = buildArticleHtml();
-  warnIfAdTextIsShort();
   try {
     await navigator.clipboard.writeText(html);
     setStatus("已复制 HTML 源码");
@@ -881,7 +833,6 @@ function copyBySelection(html) {
 }
 
 function downloadHtml() {
-  warnIfAdTextIsShort();
   const html = `<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><title>${escapeHtml(
     els.title.value,
   )}</title></head><body>${buildArticleHtml()}</body></html>`;
@@ -893,13 +844,6 @@ function downloadHtml() {
   a.click();
   URL.revokeObjectURL(url);
   setStatus("已下载 HTML 文件");
-}
-
-function warnIfAdTextIsShort() {
-  const textLength = getVisibleArticleLength();
-  if (els.adEnabled.checked && textLength < MIN_AD_TEXT_LENGTH) {
-    showToast(`正文不足 ${MIN_AD_TEXT_LENGTH} 字，请补充可见内容后再插入广告`);
-  }
 }
 
 function saveState(notify = true) {
@@ -914,10 +858,6 @@ function saveState(notify = true) {
       date: els.date.value,
       summary: els.summary.value,
       editor: els.editor.innerHTML,
-      adBrand: els.adBrand.value,
-      adCopy: els.adCopy.value,
-      adLink: els.adLink.value,
-      adEnabled: els.adEnabled.checked,
     }),
   );
   if (notify) setStatus("草稿已保存到本地浏览器");
@@ -940,10 +880,6 @@ function restoreState() {
     els.date.value = state.date || els.date.value;
     els.summary.value = state.summary || els.summary.value;
     els.editor.innerHTML = state.editor || els.editor.innerHTML;
-    els.adBrand.value = state.adBrand || els.adBrand.value;
-    els.adCopy.value = state.adCopy || els.adCopy.value;
-    els.adLink.value = state.adLink || els.adLink.value;
-    els.adEnabled.checked = state.adEnabled !== false;
     renderThemes();
   } catch {
     localStorage.removeItem(STORAGE_KEY);

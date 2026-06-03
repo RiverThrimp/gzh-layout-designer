@@ -37,15 +37,17 @@ try {
 
   assert.match(html, /微信公众号文章编辑/);
   assert.match(html, /复制到公众号/);
-  assert.match(html, /商业广告位/);
   assert.match(html, /模板资源库/);
   assert.match(html, /主题选择器/);
   assert.match(html, /媒体元素/);
   assert.match(html, /插入视频卡片/);
   assert.match(html, /插入六宫格/);
   assert.match(html, /更新所选媒体/);
-  assert.match(html, /正文可见字数/);
   assert.match(html, /反馈/);
+  assert.doesNotMatch(html, /商业广告位/);
+  assert.doesNotMatch(html, /赞助推荐/);
+  assert.doesNotMatch(contentPages.join("\n"), /赞助推荐/);
+  assert.doesNotMatch(contentPages.join("\n"), /正文可见字数/);
   assert.match(robots, /Allow: \//);
   assert.match(contentPages.join("\n"), /公众号文章怎么复制到微信后台/);
   assert.match(contentPages.join("\n"), /公众号模板库/);
