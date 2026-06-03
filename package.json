@@ -7,6 +7,11 @@
     "start": "node server.mjs",
     "lint": "node tests/static-check.mjs",
     "test:e2e": "node tests/e2e-smoke.mjs",
-    "build": "node tests/static-check.mjs"
+    "test:dist": "npm run test:e2e -- --dist",
+    "build": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "javascript-obfuscator": "^5.4.3"
   }
 }

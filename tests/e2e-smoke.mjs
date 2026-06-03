@@ -2,21 +2,24 @@ import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 
+const serveDir = process.argv.includes("--dist") ? "dist" : process.env.SERVE_DIR || "";
 const port = 8891;
-const server = spawn(process.execPath, ["server.mjs"], {
+const serverArgs = ["server.mjs"];
+if (serveDir) serverArgs.push(`--serve-dir=${serveDir}`);
+const server = spawn(process.execPath, serverArgs, {
   cwd: new URL("../", import.meta.url),
   env: { ...process.env, PORT: String(port) },
   stdio: ["ignore", "pipe", "pipe"],
 });
+let serverError = "";
+server.stderr.on("data", (chunk) => {
+  serverError += chunk.toString();
+});
 
 try {
-  await waitForServer(`http://127.0.0.1:${port}/`);
+  await waitForServer(`http://127.0.0.1:${port}/`, () => serverError);
   const html = await fetchText(`http://127.0.0.1:${port}/`);
-  const appJs = await fetchText(`http://127.0.0.1:${port}/src/app.js`);
-  const dataJs = await fetchText(`http://127.0.0.1:${port}/src/data.js`);
-  const utilsJs = await fetchText(`http://127.0.0.1:${port}/src/utils.js`);
   const robots = await fetchText(`http://127.0.0.1:${port}/robots.txt`);
-  const js = `${appJs}\n${dataJs}\n${utilsJs}`;
 
   assert.match(html, /微信公众号文章编辑/);
   assert.match(html, /复制到公众号/);
@@ -28,21 +31,33 @@ try {
   assert.match(html, /插入六宫格/);
   assert.match(html, /更新所选媒体/);
   assert.match(html, /正文可见字数/);
-  assert.match(js, /templates/);
-  assert.match(js, /customTheme/);
-  assert.match(js, /upsertImageBlock/);
-  assert.match(js, /updateSelectedMedia/);
-  assert.match(js, /buildSixGridHtml/);
-  assert.match(js, /STATE_VERSION/);
-  assert.match(js, /debouncedPushHistory/);
   assert.match(robots, /Allow: \//);
+  if (serveDir === "dist") {
+    assert.doesNotMatch(html, /src\/app\.js/);
+    assert.doesNotMatch(html, /src\/styles\.css/);
+    assert.match(html, /assets\/app\.[a-f0-9]{10}\.js/);
+    assert.match(html, /assets\/styles\.[a-f0-9]{10}\.css/);
+    assert.equal(await fetchStatus(`http://127.0.0.1:${port}/src/app.js`), 404);
+  } else {
+    const appJs = await fetchText(`http://127.0.0.1:${port}/src/app.js`);
+    const dataJs = await fetchText(`http://127.0.0.1:${port}/src/data.js`);
+    const utilsJs = await fetchText(`http://127.0.0.1:${port}/src/utils.js`);
+    const js = `${appJs}\n${dataJs}\n${utilsJs}`;
+    assert.match(js, /templates/);
+    assert.match(js, /customTheme/);
+    assert.match(js, /upsertImageBlock/);
+    assert.match(js, /updateSelectedMedia/);
+    assert.match(js, /buildSixGridHtml/);
+    assert.match(js, /STATE_VERSION/);
+    assert.match(js, /debouncedPushHistory/);
+  }
   await runBrowserFlow(`http://127.0.0.1:${port}/`);
   console.log("e2e-smoke passed");
 } finally {
   server.kill("SIGTERM");
 }
 
-async function waitForServer(url) {
+async function waitForServer(url, getServerError = () => "") {
   const started = Date.now();
   while (Date.now() - started < 5000) {
     try {
@@ -52,13 +67,18 @@ async function waitForServer(url) {
       await new Promise((resolve) => setTimeout(resolve, 120));
     }
   }
-  throw new Error("server did not start");
+  throw new Error(`server did not start${getServerError() ? `\n${getServerError()}` : ""}`);
 }
 
 async function fetchText(url) {
   const response = await fetch(url);
   assert.equal(response.ok, true, `${url} returned ${response.status}`);
   return response.text();
+}
+
+async function fetchStatus(url) {
+  const response = await fetch(url);
+  return response.status;
 }
 
 async function runBrowserFlow(url) {

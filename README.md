@@ -34,6 +34,7 @@ npm start
 npm run lint
 npm run test:e2e
 npm run build
+npm run test:dist
 ```
 
 `npm run test:e2e` 会启动本地服务，并调用 Chrome headless 执行真实浏览器烟测。macOS 默认使用：
@@ -44,16 +45,21 @@ npm run build
 
 如果在其他环境运行，请先设置 `CHROME_PATH`。
 
+`npm run build` 会生成 `dist/` 发布产物：源码模块会被打包为单个哈希文件，JS 会压缩并混淆，CSS 会压缩，不生成 sourcemap。`npm run test:dist` 会对当前 `dist/` 产物跑一次真实浏览器烟测，请先运行 `npm run build`。
+
 ## GitHub Pages 部署
 
-这是纯静态项目，可以直接推送到 GitHub 仓库并开启 Pages：
+这是纯静态项目。当前建议把构建后的 `dist/` 内容提交到 `gh-pages` 分支，避免把源码目录直接作为 GitHub Pages 站点暴露：
 
 1. Repository Settings
 2. Pages
-3. Deploy from a branch
-4. 选择 `main` 分支和 `/root`
+3. Build and deployment
+4. Source 选择 `Deploy from a branch`
+5. Branch 选择 `gh-pages` 和 `/root`
+6. 每次发布前先运行 `npm run lint && npm run build && npm run test:e2e && npm run test:dist`
+7. 将 `dist/` 内容提交到 `gh-pages` 分支并推送
 
-上线后把 `index.html`、`robots.txt`、`sitemap.xml` 中的域名替换为真实 GitHub Pages 地址或自定义域名。
+当前免费域名为 `https://riverthrimp.github.io/gzh-layout-designer/`，已经写入 `index.html`、`robots.txt`、`sitemap.xml`。
 
 ## SEO 说明
 

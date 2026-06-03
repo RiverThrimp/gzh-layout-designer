@@ -19,8 +19,10 @@ const js = appJs + "\n" + dataJs + "\n" + utilsJs;
 
 [
   "package.json",
+  "package-lock.json",
   ".gitignore",
   "server.mjs",
+  "scripts/build.mjs",
   "README.md",
   "index.html",
   "src/app.js",
@@ -80,5 +82,11 @@ assert.match(css, /length-check/);
 assert.match(css, /@media \(max-width: 1260px\)/);
 assert.match(robots, /Sitemap:/);
 assert.match(sitemap, /<urlset/);
+
+const packageJson = JSON.parse(await read("package.json"));
+assert.equal(packageJson.scripts.build, "node scripts/build.mjs");
+assert.equal(packageJson.scripts["test:dist"], "npm run test:e2e -- --dist");
+assert.ok(packageJson.devDependencies.esbuild);
+assert.ok(packageJson.devDependencies["javascript-obfuscator"]);
 
 console.log("static-check passed");

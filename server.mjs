@@ -1,10 +1,13 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const projectRoot = fileURLToPath(new URL(".", import.meta.url));
+const serveDirArg = process.argv.find((arg) => arg.startsWith("--serve-dir="))?.slice("--serve-dir=".length);
+const serveDir = serveDirArg || process.env.SERVE_DIR;
+const __dirname = serveDir ? resolve(projectRoot, serveDir) : projectRoot;
 const HOST = process.env.HOST || "127.0.0.1";
 const PORT = Number(process.env.PORT || 8791);
 
