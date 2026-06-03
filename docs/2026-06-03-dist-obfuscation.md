@@ -17,6 +17,7 @@
 - `dist/` 加入 `.gitignore`，避免提交构建产物。
 - `server.mjs` 支持通过 `SERVE_DIR=dist` 服务发布产物。
 - 新增 `npm run test:dist`，对当前 `dist/` 跑真实浏览器烟测。
+- 新增 `npm run test:live`，发布后对 GitHub Pages 线上页面跑真实浏览器烟测。
 - 发布策略改为 `gh-pages` 分支只提交 `dist/` 构建产物。
 - 更新 README 的质量检查和 GitHub Pages 部署说明。
 
@@ -40,6 +41,7 @@ After：GitHub Pages 改为发布 `gh-pages / root`。该分支只提交 `dist/`
 - `npm run test:e2e`：源码模式真实浏览器烟测通过。
 - `npm run test:e2e -- --dist`：发布产物模式真实浏览器烟测通过。
 - `npm run test:dist`：发布产物模式真实浏览器烟测通过。本地沙箱内监听端口受限，已按权限流程在沙箱外重跑通过。
+- `npm run test:live`：发布后线上页面真实浏览器烟测通过。本地沙箱内 DNS 受限，已按权限流程在沙箱外重跑通过。
 
 ## 已知风险
 

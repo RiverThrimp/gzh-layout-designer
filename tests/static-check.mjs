@@ -86,6 +86,7 @@ assert.match(sitemap, /<urlset/);
 const packageJson = JSON.parse(await read("package.json"));
 assert.equal(packageJson.scripts.build, "node scripts/build.mjs");
 assert.equal(packageJson.scripts["test:dist"], "npm run test:e2e -- --dist");
+assert.match(packageJson.scripts["test:live"], /riverthrimp\.github\.io/);
 assert.ok(packageJson.devDependencies.esbuild);
 assert.ok(packageJson.devDependencies["javascript-obfuscator"]);
 

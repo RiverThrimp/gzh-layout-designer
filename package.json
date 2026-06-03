@@ -8,6 +8,7 @@
     "lint": "node tests/static-check.mjs",
     "test:e2e": "node tests/e2e-smoke.mjs",
     "test:dist": "npm run test:e2e -- --dist",
+    "test:live": "node tests/e2e-smoke.mjs --url=https://riverthrimp.github.io/gzh-layout-designer/",
     "build": "node scripts/build.mjs"
   },
   "devDependencies": {

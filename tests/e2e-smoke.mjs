@@ -2,24 +2,28 @@ import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 
+const urlArg = process.argv.find((arg) => arg.startsWith("--url="))?.slice("--url=".length);
 const serveDir = process.argv.includes("--dist") ? "dist" : process.env.SERVE_DIR || "";
 const port = 8891;
 const serverArgs = ["server.mjs"];
 if (serveDir) serverArgs.push(`--serve-dir=${serveDir}`);
-const server = spawn(process.execPath, serverArgs, {
-  cwd: new URL("../", import.meta.url),
-  env: { ...process.env, PORT: String(port) },
-  stdio: ["ignore", "pipe", "pipe"],
-});
+const server = urlArg
+  ? null
+  : spawn(process.execPath, serverArgs, {
+      cwd: new URL("../", import.meta.url),
+      env: { ...process.env, PORT: String(port) },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
 let serverError = "";
-server.stderr.on("data", (chunk) => {
+server?.stderr.on("data", (chunk) => {
   serverError += chunk.toString();
 });
 
 try {
-  await waitForServer(`http://127.0.0.1:${port}/`, () => serverError);
-  const html = await fetchText(`http://127.0.0.1:${port}/`);
-  const robots = await fetchText(`http://127.0.0.1:${port}/robots.txt`);
+  const baseUrl = urlArg || `http://127.0.0.1:${port}/`;
+  if (!urlArg) await waitForServer(baseUrl, () => serverError);
+  const html = await fetchText(baseUrl);
+  const robots = await fetchText(new URL("robots.txt", baseUrl));
 
   assert.match(html, /微信公众号文章编辑/);
   assert.match(html, /复制到公众号/);
@@ -32,12 +36,12 @@ try {
   assert.match(html, /更新所选媒体/);
   assert.match(html, /正文可见字数/);
   assert.match(robots, /Allow: \//);
-  if (serveDir === "dist") {
+  if (serveDir === "dist" || urlArg) {
     assert.doesNotMatch(html, /src\/app\.js/);
     assert.doesNotMatch(html, /src\/styles\.css/);
     assert.match(html, /assets\/app\.[a-f0-9]{10}\.js/);
     assert.match(html, /assets\/styles\.[a-f0-9]{10}\.css/);
-    assert.equal(await fetchStatus(`http://127.0.0.1:${port}/src/app.js`), 404);
+    assert.equal(await fetchStatus(new URL("src/app.js", baseUrl)), 404);
   } else {
     const appJs = await fetchText(`http://127.0.0.1:${port}/src/app.js`);
     const dataJs = await fetchText(`http://127.0.0.1:${port}/src/data.js`);
@@ -51,10 +55,10 @@ try {
     assert.match(js, /STATE_VERSION/);
     assert.match(js, /debouncedPushHistory/);
   }
-  await runBrowserFlow(`http://127.0.0.1:${port}/`);
+  await runBrowserFlow(baseUrl);
   console.log("e2e-smoke passed");
 } finally {
-  server.kill("SIGTERM");
+  server?.kill("SIGTERM");
 }
 
 async function waitForServer(url, getServerError = () => "") {
@@ -71,13 +75,13 @@ async function waitForServer(url, getServerError = () => "") {
 }
 
 async function fetchText(url) {
-  const response = await fetch(url);
+  const response = await fetch(String(url));
   assert.equal(response.ok, true, `${url} returned ${response.status}`);
   return response.text();
 }
 
 async function fetchStatus(url) {
-  const response = await fetch(url);
+  const response = await fetch(String(url));
   return response.status;
 }
 
