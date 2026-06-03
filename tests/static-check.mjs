@@ -34,6 +34,14 @@ const js = appJs + "\n" + dataJs + "\n" + utilsJs;
   "docs/2026-06-02-gzh-layout-designer.md",
   "docs/2026-06-03-quality-hardening.md",
   "docs/components/editor-workspace.md",
+  "docs/2026-06-03-responsive-hardening.md",
+  "docs/2026-06-03-operations-foundation.md",
+  "guides/copy-to-wechat.html",
+  "guides/wechat-layout-tips.html",
+  "templates/index.html",
+  "templates/product-launch.html",
+  "templates/course-conversion.html",
+  "changelog/index.html",
 ].forEach((file) => {
   assert.ok(existsSync(new URL(file, root)), `missing ${file}`);
 });
@@ -43,6 +51,10 @@ assert.match(html, /name="description"/);
 assert.match(html, /application\/ld\+json/);
 assert.match(html, /id="editor"/);
 assert.match(html, /id="copy-button"/);
+assert.match(html, /guides\/copy-to-wechat\.html/);
+assert.match(html, /templates\//);
+assert.match(html, /changelog\//);
+assert.match(html, /mailto:fengqiang@dongbidata\.com/);
 assert.match(html, /id="ad-enabled"/);
 assert.match(html, /id="theme-select"/);
 assert.match(html, /id="template-library"/);
@@ -79,9 +91,14 @@ assert.match(css, /figure\[data-kind="video"\]/);
 assert.match(css, /data-kind="six-grid"/);
 assert.match(css, /is-selected-media/);
 assert.match(css, /length-check/);
-assert.match(css, /@media \(max-width: 1260px\)/);
+assert.match(css, /content-shell/);
+assert.match(css, /content-grid/);
+assert.match(css, /@media \(max-width: 1080px\)/);
 assert.match(robots, /Sitemap:/);
 assert.match(sitemap, /<urlset/);
+assert.match(sitemap, /guides\/copy-to-wechat\.html/);
+assert.match(sitemap, /templates\/product-launch\.html/);
+assert.match(sitemap, /changelog\//);
 
 const packageJson = JSON.parse(await read("package.json"));
 assert.equal(packageJson.scripts.build, "node scripts/build.mjs");

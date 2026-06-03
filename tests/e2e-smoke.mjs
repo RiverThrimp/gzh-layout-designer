@@ -24,6 +24,16 @@ try {
   if (!urlArg) await waitForServer(baseUrl, () => serverError);
   const html = await fetchText(baseUrl);
   const robots = await fetchText(new URL("robots.txt", baseUrl));
+  const contentPages = await Promise.all(
+    [
+      "guides/copy-to-wechat.html",
+      "guides/wechat-layout-tips.html",
+      "templates/",
+      "templates/product-launch.html",
+      "templates/course-conversion.html",
+      "changelog/",
+    ].map((path) => fetchText(new URL(path, baseUrl))),
+  );
 
   assert.match(html, /微信公众号文章编辑/);
   assert.match(html, /复制到公众号/);
@@ -35,12 +45,20 @@ try {
   assert.match(html, /插入六宫格/);
   assert.match(html, /更新所选媒体/);
   assert.match(html, /正文可见字数/);
+  assert.match(html, /反馈/);
   assert.match(robots, /Allow: \//);
+  assert.match(contentPages.join("\n"), /公众号文章怎么复制到微信后台/);
+  assert.match(contentPages.join("\n"), /公众号模板库/);
+  assert.match(contentPages.join("\n"), /更新日志/);
   if (serveDir === "dist" || urlArg) {
     assert.doesNotMatch(html, /src\/app\.js/);
     assert.doesNotMatch(html, /src\/styles\.css/);
     assert.match(html, /assets\/app\.[a-f0-9]{10}\.js/);
     assert.match(html, /assets\/styles\.[a-f0-9]{10}\.css/);
+    contentPages.forEach((page) => {
+      assert.doesNotMatch(page, /src\/styles\.css/);
+      assert.match(page, /assets\/styles\.[a-f0-9]{10}\.css/);
+    });
     assert.equal(await fetchStatus(new URL("src/app.js", baseUrl)), 404);
   } else {
     const appJs = await fetchText(`http://127.0.0.1:${port}/src/app.js`);
@@ -142,6 +160,81 @@ async function runBrowserFlow(url) {
       hasCode: true,
       hasTable: true,
       overflowX: false,
+    });
+
+    await client.send("Emulation.setDeviceMetricsOverride", {
+      width: 1180,
+      height: 760,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    const laptop = await evaluateJson(client, `
+      new Promise((resolve) => requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+        requestAnimationFrame(() => {
+          const previewRight = document.querySelector('.preview-column').getBoundingClientRect().right;
+          const rightPanelRect = document.querySelector('.right-panel').getBoundingClientRect();
+          resolve({
+            columns: getComputedStyle(document.querySelector('.workspace')).gridTemplateColumns.split(' ').length,
+            rightPanelVisibleInFirstViewport: rightPanelRect.top < 140 && rightPanelRect.left > previewRight - 1,
+            overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          });
+        });
+      }))
+    `);
+    assert.deepEqual(laptop, {
+      columns: 3,
+      rightPanelVisibleInFirstViewport: true,
+      overflowX: false,
+    });
+
+    await client.send("Emulation.setDeviceMetricsOverride", {
+      width: 1024,
+      height: 760,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    const compactLaptop = await evaluateJson(client, `
+      (() => {
+        const rightPanelRect = document.querySelector('.right-panel').getBoundingClientRect();
+        const previewRect = document.querySelector('.preview-column').getBoundingClientRect();
+        return {
+          columns: getComputedStyle(document.querySelector('.workspace')).gridTemplateColumns.split(' ').length,
+          overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          rightPanelVisibleInFirstViewport: rightPanelRect.top < 140 && rightPanelRect.right <= window.innerWidth + 1,
+          previewBelowControls: previewRect.top > rightPanelRect.top + 120,
+        };
+      })()
+    `);
+    assert.deepEqual(compactLaptop, {
+      columns: 2,
+      overflowX: false,
+      rightPanelVisibleInFirstViewport: true,
+      previewBelowControls: true,
+    });
+
+    await client.send("Emulation.setDeviceMetricsOverride", {
+      width: 900,
+      height: 760,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    const narrowLaptop = await evaluateJson(client, `
+      (() => {
+        window.scrollTo(0, 0);
+        const rightPanelRect = document.querySelector('.right-panel').getBoundingClientRect();
+        const previewRect = document.querySelector('.preview-column').getBoundingClientRect();
+        return {
+          columns: getComputedStyle(document.querySelector('.workspace')).gridTemplateColumns.split(' ').length,
+          overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          rightPanelBeforePreview: rightPanelRect.top < previewRect.top,
+        };
+      })()
+    `);
+    assert.deepEqual(narrowLaptop, {
+      columns: 1,
+      overflowX: false,
+      rightPanelBeforePreview: true,
     });
 
     await client.send("Emulation.setDeviceMetricsOverride", {

@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,7 +35,10 @@ const server = createServer(async (req, res) => {
     const pathname = decodeURIComponent(url.pathname);
     const requested = pathname === "/" ? "index.html" : pathname.slice(1);
     const safePath = normalize(requested).replace(/^(\.\.(\/|\\|$))+/, "");
-    const filePath = join(__dirname, safePath);
+    let filePath = join(__dirname, safePath);
+    if (existsSync(filePath) && (await stat(filePath)).isDirectory()) {
+      filePath = join(filePath, "index.html");
+    }
 
     if (!filePath.startsWith(__dirname) || !existsSync(filePath)) {
       return sendText(res, 404, "Not found");

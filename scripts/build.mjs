@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile, copyFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rm, writeFile, copyFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { build, transform } from "esbuild";
 import JavaScriptObfuscator from "javascript-obfuscator";
@@ -67,10 +67,34 @@ await Promise.all(
     copyFile(new URL(file, root), new URL(file, dist)),
   ),
 );
+await Promise.all(["guides", "templates", "changelog"].map((dir) => copyContentDir(dir, cssName)));
 await writeFile(new URL(".nojekyll", dist), "");
 
 console.log(`build complete: dist/index.html, assets/${jsName}, assets/${cssName}`);
 
 function hash(content) {
   return createHash("sha256").update(content).digest("hex").slice(0, 10);
+}
+
+async function copyContentDir(dir, cssFileName) {
+  const sourceDir = new URL(`${dir}/`, root);
+  const targetDir = new URL(`${dir}/`, dist);
+  await cp(sourceDir, targetDir, { recursive: true });
+  const files = await readdir(targetDir, { recursive: true });
+  await Promise.all(
+    files
+      .filter((file) => file.endsWith(".html"))
+      .map(async (file) => {
+        const target = new URL(`${dir}/${file}`, dist);
+        const html = await readFile(target, "utf8");
+        const depth = file.split("/").length;
+        const assetPrefix = depth === 1 ? "../" : "../../";
+        const built = html
+          .replace(/href="(?:\.\.\/)+src\/styles\.css"/g, `href="${assetPrefix}assets/${cssFileName}"`)
+          .replace(/\s{2,}/g, " ")
+          .replace(/>\s+</g, "><")
+          .trim();
+        await writeFile(target, `${built}\n`);
+      }),
+  );
 }
