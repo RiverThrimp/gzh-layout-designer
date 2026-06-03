@@ -1,0 +1,12 @@
+{
+  "name": "gzh-layout-designer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "lint": "node tests/static-check.mjs",
+    "test:e2e": "node tests/e2e-smoke.mjs",
+    "build": "node tests/static-check.mjs"
+  }
+}

@@ -1,0 +1,6 @@
+.DS_Store
+*.log
+screenshot-test.png
+docs/.DS_Store
+.claude/
+node_modules/
